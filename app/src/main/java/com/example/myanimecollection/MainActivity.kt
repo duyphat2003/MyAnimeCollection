@@ -2,46 +2,48 @@ package com.example.myanimecollection
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
-import com.example.myanimecollection.ui.theme.MyAnimeCollectionTheme
+import androidx.lifecycle.ViewModelProvider
+import androidx.recyclerview.widget.LinearLayoutManager
+import com.example.myanimecollection.databinding.ActivityMainBinding
+import com.example.myanimecollection.ui.layout.TodoAdapter
+import com.example.myanimecollection.viewmodel.TodoViewModel
 
 class MainActivity : ComponentActivity() {
+
+    private lateinit var binding: ActivityMainBinding
+    private lateinit var  viewModel: TodoViewModel
+    private lateinit var adapter: TodoAdapter
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        setContent {
-            MyAnimeCollectionTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Android",
-                        modifier = Modifier.padding(innerPadding)
-                    )
-                }
+        binding = ActivityMainBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+
+        viewModel = ViewModelProvider(this)[TodoViewModel::class.java]
+
+        adapter = TodoAdapter(
+            onToggleDone = {viewModel.toggleDone(it)},
+            onDelete = {viewModel.deleteTodo(it)}
+         )
+
+        binding.rvTodos.adapter = adapter
+
+        binding.rvTodos.layoutManager = LinearLayoutManager(this)
+
+
+        binding.btnAdd.setOnClickListener {
+            val text = binding.etTodo.editText?.text.toString()
+            if(text.isNotBlank())
+            {
+                viewModel.insertTodo(text)
+                binding.etTodo.editText?.text?.clear()
             }
         }
-    }
-}
 
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    MyAnimeCollectionTheme {
-        Greeting("Android")
+        viewModel.todos.observe(this){
+            todos -> adapter.submitList(todos)
+        }
     }
 }
